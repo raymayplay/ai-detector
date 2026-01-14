@@ -13,7 +13,8 @@ externalPort = 80
 language = "python3"
 
 [deployment]
-run = ["sh", "-c", "python app.py"]
+run = ["python", "app.py"]
+deploymentTarget = "autoscale"
 
 [agent]
 expertMode = true
