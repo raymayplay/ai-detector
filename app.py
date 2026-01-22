@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import json
+import yt_dlp
 from werkzeug.utils import secure_filename
 from detect_ai_video import analyze_video_characteristics
 
@@ -95,6 +96,73 @@ def analyze_video():
             'status': 'error',
             'message': str(e),
             'details': type(e).__name__
+        }), 500
+
+
+@app.route('/api/analyze-url', methods=['POST'])
+def analyze_url():
+    """Handle YouTube URL analysis"""
+    try:
+        data = request.json
+        url = data.get('url')
+        
+        if not url:
+            return jsonify({'status': 'error', 'message': 'No URL provided'}), 400
+            
+        print(f"[DEBUG] URL received: {url}")
+        
+        # Use yt-dlp to get info
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            title = info.get('title', 'Unknown Title')
+            description = info.get('description', '').lower()
+            uploader = info.get('uploader', '').lower()
+            
+            # Simple heuristic detection for YouTube metadata
+            score = 0.0
+            factors = []
+            
+            # Factor 1: Keywords in title/description
+            ai_keywords = ['ai', 'synthetic', 'generated', 'deepfake', 'stable', 'midjourney', 'dali', 'veo', 'sora']
+            found_keywords = [kw for kw in ai_keywords if kw in title.lower() or kw in description]
+            
+            if found_keywords:
+                score += 0.4
+                factors.append(f"AI keywords found in metadata: {', '.join(found_keywords)} (+0.40)")
+            
+            # Factor 2: Uploader name
+            if any(kw in uploader for kw in ai_keywords):
+                score += 0.2
+                factors.append(f"AI-related channel name: {uploader} (+0.20)")
+                
+            # Factor 3: Channel tags/categories
+            tags = info.get('tags', [])
+            found_tags = [tag.lower() for tag in tags if any(kw in tag.lower() for kw in ai_keywords)]
+            if found_tags:
+                score += 0.2
+                factors.append(f"AI-related tags found (+0.20)")
+
+            is_ai = score > 0.5
+            
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'filename': title,
+                    'is_ai': is_ai,
+                    'factors': factors
+                }
+            })
+            
+    except Exception as e:
+        print(f"[ERROR] URL Analysis Exception: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f"Could not analyze URL: {str(e)}"
         }), 500
 
 

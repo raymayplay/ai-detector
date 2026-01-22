@@ -65,7 +65,31 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .upload-zone {
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .upload-zone, .url-input-zone {
             border: 2px dashed rgba(255, 255, 255, 0.2);
             border-radius: 0.75rem;
             padding: 3rem 1rem;
@@ -75,7 +99,7 @@
             position: relative;
         }
 
-        .upload-zone:hover {
+        .upload-zone:hover, .url-input-zone:hover {
             border-color: var(--primary);
             background-color: rgba(99, 102, 241, 0.05);
         }
@@ -207,19 +231,38 @@
         </header>
 
         <main class="main-card">
-            <div class="upload-zone" id="drop-zone">
-                <div class="spinner" id="loading-spinner"></div>
-                <span class="upload-icon">📁</span>
-                <p id="upload-text">Click or drag video to verify authenticity</p>
-                <input type="file" id="file-input" accept="video/*">
-                <button class="btn" id="select-btn">Select File</button>
+            <div class="tabs">
+                <button class="tab-btn active" id="upload-tab-btn">Upload Video</button>
+                <button class="tab-btn" id="url-tab-btn">YouTube Link</button>
+            </div>
+
+            <div id="upload-section">
+                <div class="upload-zone" id="drop-zone">
+                    <div class="spinner" id="loading-spinner"></div>
+                    <span class="upload-icon">📁</span>
+                    <p id="upload-text">Click or drag video to verify authenticity</p>
+                    <input type="file" id="file-input" accept="video/*">
+                    <button class="btn" id="select-btn">Select File</button>
+                </div>
+            </div>
+
+            <div id="url-section" style="display: none;">
+                <div class="url-input-zone" id="url-zone">
+                    <div class="spinner" id="url-spinner"></div>
+                    <span class="upload-icon">🔗</span>
+                    <p id="url-text">Paste YouTube URL to analyze metadata</p>
+                    <div class="copy-link-box" id="url-box" style="margin-top: 1rem;">
+                        <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=...">
+                        <button class="btn" id="analyze-url-btn" style="margin-top: 0; padding: 0.5rem 1.5rem;">Analyze</button>
+                    </div>
+                </div>
             </div>
 
             <div id="status"></div>
 
             <div id="results">
                 <div id="detection-badge" class="result-badge"></div>
-            </div>
+            </div
 
             <div class="share-section">
                 <p class="subtitle" style="font-size: 0.9rem; margin-bottom: 0.5rem;">Invite others to verify media</p>
@@ -247,6 +290,36 @@
         const uploadText = document.getElementById('upload-text');
         const shareUrlInput = document.getElementById('share-url');
         const copyBtn = document.getElementById('copy-btn');
+        
+        const uploadTabBtn = document.getElementById('upload-tab-btn');
+        const urlTabBtn = document.getElementById('url-tab-btn');
+        const uploadSection = document.getElementById('upload-section');
+        const urlSection = document.getElementById('url-section');
+        const youtubeUrlInput = document.getElementById('youtube-url');
+        const analyzeUrlBtn = document.getElementById('analyze-url-btn');
+        const urlSpinner = document.getElementById('url-spinner');
+        const urlZone = document.getElementById('url-zone');
+        const urlText = document.getElementById('url-text');
+        const urlBox = document.getElementById('url-box');
+
+        // Tab Switching
+        uploadTabBtn.onclick = () => {
+            uploadTabBtn.classList.add('active');
+            urlTabBtn.classList.remove('active');
+            uploadSection.style.display = 'block';
+            urlSection.style.display = 'none';
+            status.innerText = '';
+            results.style.display = 'none';
+        };
+
+        urlTabBtn.onclick = () => {
+            urlTabBtn.classList.add('active');
+            uploadTabBtn.classList.remove('active');
+            urlSection.style.display = 'block';
+            uploadSection.style.display = 'none';
+            status.innerText = '';
+            results.style.display = 'none';
+        };
 
         // Set the current URL in the share input
         shareUrlInput.value = window.location.href;
@@ -302,7 +375,6 @@
             const formData = new FormData();
             formData.append('video', file);
 
-            // UI State: Loading
             status.innerText = 'Analyzing media...';
             status.style.color = 'var(--text-main)';
             results.style.display = 'none';
@@ -316,10 +388,8 @@
                     method: 'POST',
                     body: formData
                 });
-                
                 const result = await response.json();
 
-                // UI State: Reset
                 spinner.style.display = 'none';
                 uploadIcon.style.display = 'block';
                 uploadText.style.display = 'block';
@@ -328,7 +398,6 @@
                 if (result.status === 'success') {
                     status.innerText = '';
                     results.style.display = 'block';
-                    
                     if (result.data.is_ai) {
                         badge.innerText = '🚨 AI Generated Content';
                         badge.className = 'result-badge badge-ai';
@@ -347,9 +416,58 @@
                 selectBtn.style.display = 'inline-block';
                 status.innerText = 'Connection error. Please try again.';
                 status.style.color = 'var(--danger)';
-                console.error(err);
             }
         }
+
+        // YouTube URL Analysis
+        analyzeUrlBtn.onclick = async () => {
+            const url = youtubeUrlInput.value.trim();
+            if (!url) {
+                status.innerHTML = '<span style="color:var(--danger)">Please enter a YouTube URL.</span>';
+                return;
+            }
+
+            status.innerText = 'Analyzing YouTube metadata...';
+            status.style.color = 'var(--text-main)';
+            results.style.display = 'none';
+            urlSpinner.style.display = 'block';
+            urlBox.style.display = 'none';
+            urlText.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/analyze-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const result = await response.json();
+
+                urlSpinner.style.display = 'none';
+                urlBox.style.display = 'flex';
+                urlText.style.display = 'block';
+
+                if (result.status === 'success') {
+                    status.innerText = '';
+                    results.style.display = 'block';
+                    if (result.data.is_ai) {
+                        badge.innerText = '🚨 AI Generated Content';
+                        badge.className = 'result-badge badge-ai';
+                    } else {
+                        badge.innerText = '✅ Authentic Media';
+                        badge.className = 'result-badge badge-authentic';
+                    }
+                } else {
+                    status.innerText = 'Error: ' + result.message;
+                    status.style.color = 'var(--danger)';
+                }
+            } catch (err) {
+                urlSpinner.style.display = 'none';
+                urlBox.style.display = 'flex';
+                urlText.style.display = 'block';
+                status.innerText = 'Connection error. Please try again.';
+                status.style.color = 'var(--danger)';
+            }
+        };
     </script>
 </body>
 </html>
