@@ -115,10 +115,24 @@ def analyze_url():
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
+            'geo_bypass': True,
+            'geo_bypass_country': 'US',
+            'skip_download': True,
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+            try:
+                info = ydl.extract_info(url, download=False)
+            except yt_dlp.utils.DownloadError as e:
+                err = str(e)
+                if 'unavailable' in err.lower() or 'not available' in err.lower():
+                    return jsonify({'status': 'error', 'message': 'This video is unavailable or restricted in this region. Please try a different video.'}), 400
+                elif 'private' in err.lower():
+                    return jsonify({'status': 'error', 'message': 'This video is private and cannot be analyzed.'}), 400
+                elif 'age' in err.lower():
+                    return jsonify({'status': 'error', 'message': 'This video is age-restricted and cannot be analyzed.'}), 400
+                else:
+                    return jsonify({'status': 'error', 'message': 'Could not fetch this video. Make sure the URL is a valid YouTube link.'}), 400
             title = info.get('title', 'Unknown Title')
             description = info.get('description', '').lower()
             uploader = info.get('uploader', '').lower()
