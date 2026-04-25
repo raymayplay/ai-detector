@@ -1,9 +1,15 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import json
+import urllib.request
+import urllib.parse
+from datetime import datetime
 import yt_dlp
 from werkzeug.utils import secure_filename
 from detect_ai_video import analyze_video_characteristics
+
+FEEDBACK_EMAIL = 'mokshoswal152@gmail.com'
+FEEDBACK_LOG = os.path.join(os.path.dirname(__file__), 'feedback.log')
 
 app = Flask(__name__, template_folder='templates')
 
@@ -197,6 +203,65 @@ def analyze_url():
             'status': 'error',
             'message': f"Could not analyze URL: {str(e)}"
         }), 500
+
+
+@app.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    """Receive user feedback and email it to the owner."""
+    try:
+        data = request.json or {}
+        name = str(data.get('name', 'Anonymous'))[:100]
+        email = str(data.get('email', 'Not provided'))[:120]
+        rating = str(data.get('rating', 'Not rated'))[:10]
+        message = str(data.get('message', '')).strip()[:5000]
+
+        if not message:
+            return jsonify({'status': 'error', 'message': 'Message is required'}), 400
+
+        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+
+        # Always save a local log as a backup so feedback is never lost
+        try:
+            with open(FEEDBACK_LOG, 'a', encoding='utf-8') as f:
+                f.write(f"\n--- {timestamp} ---\n")
+                f.write(f"Name: {name}\nEmail: {email}\nRating: {rating}\n")
+                f.write(f"Message: {message}\n")
+        except Exception as log_err:
+            print(f"[WARN] Could not write feedback log: {log_err}")
+
+        # Forward to owner's email via formsubmit.co (free, no API key required)
+        try:
+            payload = json.dumps({
+                'name': name,
+                'email': email if '@' in email else 'noreply@aivideodetector.app',
+                'rating': rating,
+                'message': message,
+                '_subject': f'New AI Video Detector Feedback ({rating} stars) from {name}',
+                '_template': 'table',
+                '_captcha': 'false',
+            }).encode('utf-8')
+            req = urllib.request.Request(
+                f'https://formsubmit.co/ajax/{FEEDBACK_EMAIL}',
+                data=payload,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (compatible; AI-Video-Detector/1.0)'
+                },
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                resp.read()
+        except Exception as mail_err:
+            print(f"[WARN] Email forwarding failed: {mail_err}")
+            # Feedback is still saved locally, so report success to user
+            return jsonify({'status': 'success', 'message': 'Feedback received'}), 200
+
+        return jsonify({'status': 'success', 'message': 'Feedback sent'}), 200
+
+    except Exception as e:
+        print(f"[ERROR] Feedback Exception: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Could not process feedback'}), 500
 
 
 @app.route('/health')
