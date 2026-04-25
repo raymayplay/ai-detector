@@ -206,6 +206,113 @@
             font-size: 0.875rem;
         }
 
+        /* Feedback Section */
+        .feedback-card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feedback-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 0.25rem 0;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .fb-input {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+            flex: 1;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .fb-input:focus {
+            border-color: var(--primary);
+        }
+
+        .fb-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .fb-textarea {
+            min-height: 120px;
+            resize: vertical;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .rating-group {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .rating-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .stars {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .star {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: color 0.15s, transform 0.15s;
+            user-select: none;
+        }
+
+        .star:hover {
+            transform: scale(1.15);
+        }
+
+        .star.active {
+            color: #facc15;
+        }
+
+        .fb-submit-btn {
+            width: 100%;
+            margin-top: 0;
+        }
+
+        #fb-status {
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: 500;
+            min-height: 1.25rem;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column;
+            }
+        }
+
         /* Loading Spinner */
         .spinner {
             display: none;
@@ -262,7 +369,7 @@
 
             <div id="results">
                 <div id="detection-badge" class="result-badge"></div>
-            </div
+            </div>
 
             <div class="share-section">
                 <p class="subtitle" style="font-size: 0.9rem; margin-bottom: 0.5rem;">Invite others to verify media</p>
@@ -272,6 +379,37 @@
                 </div>
             </div>
         </main>
+
+        <section class="feedback-card">
+            <h2 class="feedback-title">Share Your Feedback</h2>
+            <p class="subtitle" style="font-size: 0.95rem; margin-bottom: 1.5rem;">
+                Help us improve! Your thoughts go straight to our team.
+            </p>
+
+            <form id="feedback-form">
+                <div class="form-row">
+                    <input type="text" id="fb-name" name="name" placeholder="Your name (optional)" class="fb-input">
+                    <input type="email" id="fb-email" name="email" placeholder="Your email (optional)" class="fb-input">
+                </div>
+
+                <div class="rating-group" id="rating-group">
+                    <span class="rating-label">Rate your experience:</span>
+                    <div class="stars">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="fb-rating" name="rating" value="">
+                </div>
+
+                <textarea id="fb-message" name="message" placeholder="Tell us what you think..." class="fb-input fb-textarea" required></textarea>
+
+                <button type="submit" class="btn fb-submit-btn" id="fb-submit-btn">Send Feedback</button>
+                <div id="fb-status"></div>
+            </form>
+        </section>
     </div>
 
     <footer>
@@ -418,6 +556,91 @@
                 status.style.color = 'var(--danger)';
             }
         }
+
+        // Feedback Form
+        const feedbackForm = document.getElementById('feedback-form');
+        const fbStatus = document.getElementById('fb-status');
+        const fbSubmitBtn = document.getElementById('fb-submit-btn');
+        const fbRating = document.getElementById('fb-rating');
+        const stars = document.querySelectorAll('.star');
+
+        // Star rating logic
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const value = parseInt(star.dataset.value);
+                fbRating.value = value;
+                stars.forEach(s => {
+                    if (parseInt(s.dataset.value) <= value) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+            });
+
+            star.addEventListener('mouseenter', () => {
+                const value = parseInt(star.dataset.value);
+                stars.forEach(s => {
+                    if (parseInt(s.dataset.value) <= value) {
+                        s.style.color = '#facc15';
+                    } else {
+                        s.style.color = 'rgba(255, 255, 255, 0.2)';
+                    }
+                });
+            });
+        });
+
+        document.getElementById('rating-group').addEventListener('mouseleave', () => {
+            const currentRating = parseInt(fbRating.value) || 0;
+            stars.forEach(s => {
+                s.style.color = parseInt(s.dataset.value) <= currentRating ? '#facc15' : 'rgba(255, 255, 255, 0.2)';
+            });
+        });
+
+        feedbackForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('fb-message').value.trim();
+            if (!message) {
+                fbStatus.innerHTML = '<span style="color:var(--danger)">Please write a message.</span>';
+                return;
+            }
+
+            const formData = new FormData(feedbackForm);
+            fbSubmitBtn.disabled = true;
+            fbSubmitBtn.innerText = 'Sending...';
+            fbStatus.innerText = '';
+
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: formData.get('name') || 'Anonymous',
+                        email: formData.get('email') || 'Not provided',
+                        rating: formData.get('rating') || 'Not rated',
+                        message: formData.get('message')
+                    })
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    fbStatus.innerHTML = '<span style="color:var(--success)">✓ Thank you! Your feedback has been sent.</span>';
+                    feedbackForm.reset();
+                    fbRating.value = '';
+                    stars.forEach(s => {
+                        s.classList.remove('active');
+                        s.style.color = 'rgba(255, 255, 255, 0.2)';
+                    });
+                } else {
+                    fbStatus.innerHTML = '<span style="color:var(--danger)">Could not send feedback. Please try again.</span>';
+                }
+            } catch (err) {
+                fbStatus.innerHTML = '<span style="color:var(--danger)">Connection error. Please try again.</span>';
+            } finally {
+                fbSubmitBtn.disabled = false;
+                fbSubmitBtn.innerText = 'Send Feedback';
+            }
+        });
 
         // YouTube URL Analysis
         analyzeUrlBtn.onclick = async () => {
