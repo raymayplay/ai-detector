@@ -206,6 +206,38 @@
             font-size: 0.875rem;
         }
 
+        /* Detection details */
+        .detection-details {
+            margin-top: 1rem;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: left;
+        }
+        .factor-block { margin-bottom: 0.75rem; }
+        .factor-title {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.4rem;
+            font-size: 0.95rem;
+        }
+        .detection-details ul {
+            margin: 0;
+            padding-left: 1.25rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .detection-details li { margin-bottom: 0.25rem; }
+        .disclaimer {
+            margin: 0.75rem 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
         /* Feedback Section */
         .feedback-card {
             background-color: var(--card-bg);
@@ -536,13 +568,7 @@
                 if (result.status === 'success') {
                     status.innerText = '';
                     results.style.display = 'block';
-                    if (result.data.is_ai) {
-                        badge.innerText = '🚨 AI Generated Content';
-                        badge.className = 'result-badge badge-ai';
-                    } else {
-                        badge.innerText = '✅ Authentic Media';
-                        badge.className = 'result-badge badge-authentic';
-                    }
+                    renderDetectionResult(result.data);
                 } else {
                     status.innerText = 'Error: ' + result.message;
                     status.style.color = 'var(--danger)';
@@ -555,6 +581,48 @@
                 status.innerText = 'Connection error. Please try again.';
                 status.style.color = 'var(--danger)';
             }
+        }
+
+        function renderDetectionResult(data) {
+            const isAi = data.is_ai;
+            const confidence = data.confidence || 'Medium';
+            const factors = data.factors || [];
+            const authFactors = data.authenticity_factors || [];
+
+            const headline = isAi
+                ? `AI Generated Content (${confidence} confidence)`
+                : `Authentic Media (${confidence} confidence)`;
+
+            badge.innerHTML = headline;
+            badge.className = 'result-badge ' + (isAi ? 'badge-ai' : 'badge-authentic');
+
+            let detailsEl = document.getElementById('detection-details');
+            if (!detailsEl) {
+                detailsEl = document.createElement('div');
+                detailsEl.id = 'detection-details';
+                detailsEl.className = 'detection-details';
+                document.getElementById('results').appendChild(detailsEl);
+            }
+
+            let html = '';
+            if (factors.length > 0) {
+                html += '<div class="factor-block"><div class="factor-title">What we found</div><ul>';
+                factors.forEach(f => { html += `<li>${escapeHtml(f)}</li>`; });
+                html += '</ul></div>';
+            }
+            if (authFactors.length > 0) {
+                html += '<div class="factor-block"><div class="factor-title">Authenticity signals</div><ul>';
+                authFactors.forEach(f => { html += `<li>${escapeHtml(f)}</li>`; });
+                html += '</ul></div>';
+            }
+            html += '<p class="disclaimer">Heuristic analysis based on video metadata. Always cross-check sources for important media.</p>';
+            detailsEl.innerHTML = html;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
 
         // Feedback Form
@@ -672,13 +740,7 @@
                 if (result.status === 'success') {
                     status.innerText = '';
                     results.style.display = 'block';
-                    if (result.data.is_ai) {
-                        badge.innerText = '🚨 AI Generated Content';
-                        badge.className = 'result-badge badge-ai';
-                    } else {
-                        badge.innerText = '✅ Authentic Media';
-                        badge.className = 'result-badge badge-authentic';
-                    }
+                    renderDetectionResult(result.data);
                 } else {
                     status.innerText = 'Error: ' + result.message;
                     status.style.color = 'var(--danger)';
