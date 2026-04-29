@@ -159,6 +159,9 @@ def analyze_url():
                 r'\bai[\s\-]?generated\b',
                 r'\bgenerated\s+by\s+ai\b',
                 r'\bai[\s\-]?made\b',
+                r'\bmade\s+by\s+ai\b',
+                r'\bcreated\s+by\s+ai\b',
+                r'\bcreated\s+with\s+ai\b',
                 r'\bdeepfake\b',
                 r'\bsynthetic\s+media\b',
                 r'\bsynthetic\s+video\b',
@@ -178,6 +181,53 @@ def analyze_url():
             if strong_hits:
                 score += 0.7
                 factors.append(f"Explicit AI indicator: {', '.join(set(strong_hits))}")
+
+            # Contextual AI patterns — natural language signals that the video itself is AI-generated.
+            # These match phrases that creators commonly use in titles/descriptions for AI content,
+            # while ignoring videos that merely discuss AI as a topic.
+            contextual_patterns = [
+                r'\bai\s+(interviews?|recreates?|imagines?|reimagines?|reconstructs?|reenacts?|brings?|brought|shows?|sings?|performs?|narrates?|voices?|generates?|creates?|made|makes?|did|does|drew|paints?|wrote|writes?|tells?|raps?|describes?)\b',
+                r'\b(asked|using|with|by|via|through|prompted)\s+ai\b',
+                r'\bai\s+version\s+of\b',
+                r'\bai[\s\-]+(art|model|tool|image|video|animation|render|footage|clip|short|movie|film)\b',
+                r'\b(midjourney|sora|runway|pika|kling|luma|dall[\s\-]?e|chatgpt|gpt[\s\-]?[0-9]?|stable\s+diffusion|leonardo|firefly)\b',
+                r'\bgenerated\s+(with|using|by|via)\s+(ai|artificial)\b',
+                r'\bprompt(ed|s|ing)?\b.{0,40}\b(ai|model|gpt|midjourney|sora)\b',
+                r'\bthis\s+is\s+what\s+(ai|the\s+ai)\s+',
+                r'\bwhat\s+(if\s+)?ai\s+(thinks|made|created|imagined|generated)\b',
+                r'\bi\s+asked\s+ai\b',
+            ]
+            contextual_hits = []
+            for pat in contextual_patterns:
+                m = re.search(pat, haystack)
+                if m:
+                    contextual_hits.append(m.group(0).strip())
+            if contextual_hits and not strong_hits:
+                # Strong contextual evidence in description usually means AI-made content
+                # Two or more matches → high confidence; one match → still strong enough
+                if len(set(contextual_hits)) >= 2:
+                    score += 0.7
+                    factors.append(
+                        f"Multiple AI generation phrases found: {', '.join(set(contextual_hits))}"
+                    )
+                else:
+                    score += 0.55
+                    factors.append(
+                        f"AI generation phrase found: {', '.join(set(contextual_hits))}"
+                    )
+            elif contextual_hits:
+                score += 0.15
+                factors.append(
+                    f"Additional AI context: {', '.join(set(contextual_hits))}"
+                )
+
+            # Standalone "AI" appearing prominently in the title
+            # (with word boundaries so words like "Astley" don't match)
+            title_lower = title.lower()
+            ai_in_title = re.findall(r'\bai\b', title_lower)
+            if ai_in_title and not strong_hits and not contextual_hits:
+                score += 0.25
+                factors.append("Title prominently mentions 'AI'")
 
             # AI-related tags (exact tag match, not substring)
             ai_tag_set = {
