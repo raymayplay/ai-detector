@@ -2,12 +2,19 @@ from flask import Flask, render_template, request, jsonify
 import os
 import json
 import re
+import tempfile
 import urllib.request
 import urllib.parse
 from datetime import datetime
 import yt_dlp
 from werkzeug.utils import secure_filename
 from detect_ai_video import analyze_video_characteristics
+
+try:
+    from frame_analyzer import analyze_frames
+    _FRAME_ANALYSIS_AVAILABLE = True
+except ImportError:
+    _FRAME_ANALYSIS_AVAILABLE = False
 
 FEEDBACK_EMAIL = 'mokshoswal152@gmail.com'
 FEEDBACK_LOG = os.path.join(os.path.dirname(__file__), 'feedback.log')
@@ -106,6 +113,61 @@ def analyze_video():
             'message': str(e),
             'details': type(e).__name__
         }), 500
+
+
+def _run_frame_analysis_for_url(url, score, factors, authenticity_factors):
+    """Download a small copy of the video and run frame-level AI analysis."""
+    tmpdir = tempfile.mkdtemp(prefix="ytvid_")
+    try:
+        out_template = os.path.join(tmpdir, 'video.%(ext)s')
+        download_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'geo_bypass': True,
+            'geo_bypass_country': 'US',
+            # Prefer single-file formats at low resolution; we only need frames.
+            'format': (
+                'best[height<=360][ext=mp4][vcodec!=none]/'
+                'best[height<=480][ext=mp4][vcodec!=none]/'
+                'worstvideo[height<=480]/'
+                'worst'
+            ),
+            'outtmpl': out_template,
+            'max_filesize': 80 * 1024 * 1024,
+            'socket_timeout': 30,
+            'noplaylist': True,
+            'merge_output_format': 'mp4',
+        }
+        with yt_dlp.YoutubeDL(download_opts) as dl:
+            try:
+                dl.download([url])
+            except Exception as de:
+                print(f"[WARN] Download for frame analysis failed: {de}")
+                return score, factors, authenticity_factors
+
+        # Locate downloaded file
+        downloaded = None
+        for fname in os.listdir(tmpdir):
+            if fname.startswith('video.'):
+                downloaded = os.path.join(tmpdir, fname)
+                break
+        if not downloaded or not os.path.isfile(downloaded):
+            return score, factors, authenticity_factors
+
+        frame_result = analyze_frames(downloaded)
+        score += frame_result.get('score', 0.0)
+        for f in frame_result.get('factors', []):
+            factors.append(f"Visual: {f}")
+        for f in frame_result.get('authenticity_factors', []):
+            authenticity_factors.append(f"Visual: {f}")
+
+        return score, factors, authenticity_factors
+    finally:
+        try:
+            import shutil
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        except Exception:
+            pass
 
 
 @app.route('/api/analyze-url', methods=['POST'])
@@ -265,6 +327,15 @@ def analyze_url():
             duration = info.get('duration') or 0
             if duration > 600 and not strong_hits:
                 authenticity_factors.append(f"Long-form content ({int(duration / 60)} min)")
+
+            # ---- Visual frame analysis: download a small copy and inspect frames ----
+            if _FRAME_ANALYSIS_AVAILABLE and (info.get('duration') or 0) <= 1800:
+                try:
+                    score, factors, authenticity_factors = _run_frame_analysis_for_url(
+                        url, score, factors, authenticity_factors
+                    )
+                except Exception as fe:
+                    print(f"[WARN] Frame analysis skipped: {fe}")
 
             score = min(score, 1.0)
 

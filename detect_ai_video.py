@@ -6,6 +6,12 @@ import subprocess
 import sys
 from typing import Optional
 
+try:
+    from frame_analyzer import analyze_frames
+    _FRAME_ANALYSIS_AVAILABLE = True
+except ImportError:
+    _FRAME_ANALYSIS_AVAILABLE = False
+
 
 KNOWN_AI_ENCODER_SIGNATURES = [
     'sora', 'runway', 'pika', 'kling', 'luma', 'dream machine',
@@ -141,6 +147,20 @@ def analyze_video_characteristics(video_path: str, debug: bool = False) -> dict:
         # Treat as a very weak indicator only.
         score += 0.05
         factors.append("Video metadata is missing or stripped (weak indicator)")
+
+    # ---- Factor 4: Visual frame analysis ----
+    if _FRAME_ANALYSIS_AVAILABLE:
+        try:
+            frame_result = analyze_frames(video_path)
+            score += frame_result.get("score", 0.0)
+            for f in frame_result.get("factors", []):
+                factors.append(f"Visual: {f}")
+            for f in frame_result.get("authenticity_factors", []):
+                auth_factors.append(f"Visual: {f}")
+            result["frame_details"] = frame_result.get("details", {})
+        except Exception as e:
+            if debug:
+                print(f"[DEBUG] Frame analysis failed: {e}")
 
     # ---- Final scoring ----
     score = min(score, 1.0)
