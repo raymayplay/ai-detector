@@ -397,56 +397,36 @@ def submit_feedback():
         except Exception as log_err:
             print(f"[WARN] Could not write feedback log: {log_err}")
 
-        # Send email via Gmail SMTP
+        # Send email via Resend API
         try:
-            import smtplib
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
+            import resend
 
-            # Strip all whitespace (Google shows app passwords with spaces)
-            gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '').replace(' ', '').strip()
-            if not gmail_password:
-                raise RuntimeError("GMAIL_APP_PASSWORD secret not set")
+            resend.api_key = os.environ.get('RESEND_API_KEY', '')
+            if not resend.api_key:
+                raise RuntimeError("RESEND_API_KEY secret not set")
 
-            print(f"[DEBUG] Password length after stripping: {len(gmail_password)}")
-
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f'New Feedback ({rating}★) from {name} — AI Video Detector'
-            msg['From'] = FEEDBACK_EMAIL
-            msg['To'] = FEEDBACK_EMAIL
-
+            stars = '★' * int(rating) if rating.isdigit() else rating
             html_body = f"""
             <html><body style="font-family:sans-serif;color:#222;">
             <h2 style="color:#4f46e5;">New Feedback Received</h2>
-            <table style="border-collapse:collapse;width:100%;">
-              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Name</td><td style="padding:8px;border:1px solid #ddd;">{name}</td></tr>
-              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Email</td><td style="padding:8px;border:1px solid #ddd;">{email}</td></tr>
-              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Rating</td><td style="padding:8px;border:1px solid #ddd;">{'★' * int(rating) if rating.isdigit() else rating}</td></tr>
-              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Message</td><td style="padding:8px;border:1px solid #ddd;">{message}</td></tr>
-              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Time</td><td style="padding:8px;border:1px solid #ddd;">{timestamp}</td></tr>
+            <table style="border-collapse:collapse;width:100%;max-width:600px;">
+              <tr style="background:#f5f5f5;"><td style="padding:10px;border:1px solid #ddd;font-weight:bold;width:120px;">Name</td><td style="padding:10px;border:1px solid #ddd;">{name}</td></tr>
+              <tr><td style="padding:10px;border:1px solid #ddd;font-weight:bold;">Email</td><td style="padding:10px;border:1px solid #ddd;">{email}</td></tr>
+              <tr style="background:#f5f5f5;"><td style="padding:10px;border:1px solid #ddd;font-weight:bold;">Rating</td><td style="padding:10px;border:1px solid #ddd;color:#f59e0b;font-size:1.2em;">{stars}</td></tr>
+              <tr><td style="padding:10px;border:1px solid #ddd;font-weight:bold;">Message</td><td style="padding:10px;border:1px solid #ddd;">{message}</td></tr>
+              <tr style="background:#f5f5f5;"><td style="padding:10px;border:1px solid #ddd;font-weight:bold;">Time</td><td style="padding:10px;border:1px solid #ddd;">{timestamp}</td></tr>
             </table>
             </body></html>
             """
-            text_body = f"Name: {name}\nEmail: {email}\nRating: {rating}\nMessage: {message}\nTime: {timestamp}"
 
-            msg.attach(MIMEText(text_body, 'plain'))
-            msg.attach(MIMEText(html_body, 'html'))
-
-            # Try port 587 (STARTTLS) first, fall back to 465 (SSL)
-            try:
-                with smtplib.SMTP('smtp.gmail.com', 587) as server:
-                    server.ehlo()
-                    server.starttls()
-                    server.ehlo()
-                    server.login(FEEDBACK_EMAIL, gmail_password)
-                    server.sendmail(FEEDBACK_EMAIL, FEEDBACK_EMAIL, msg.as_string())
-                    print("[INFO] Email sent via port 587")
-            except Exception as e587:
-                print(f"[DEBUG] Port 587 failed ({e587}), trying 465...")
-                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                    server.login(FEEDBACK_EMAIL, gmail_password)
-                    server.sendmail(FEEDBACK_EMAIL, FEEDBACK_EMAIL, msg.as_string())
-                    print("[INFO] Email sent via port 465")
+            params = {
+                "from": "AI Video Detector <onboarding@resend.dev>",
+                "to": [FEEDBACK_EMAIL],
+                "subject": f"New Feedback ({rating}★) from {name} — AI Video Detector",
+                "html": html_body,
+            }
+            resend.Emails.send(params)
+            print(f"[INFO] Feedback email sent via Resend from {name}")
 
             print(f"[INFO] Feedback email sent successfully from {name}")
         except Exception as mail_err:
