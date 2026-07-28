@@ -397,32 +397,46 @@ def submit_feedback():
         except Exception as log_err:
             print(f"[WARN] Could not write feedback log: {log_err}")
 
-        # Forward to owner's email via formsubmit.co (free, no API key required)
+        # Send email via Gmail SMTP
         try:
-            payload = json.dumps({
-                'name': name,
-                'email': email if '@' in email else 'noreply@aivideodetector.app',
-                'rating': rating,
-                'message': message,
-                '_subject': f'New AI Video Detector Feedback ({rating} stars) from {name}',
-                '_template': 'table',
-                '_captcha': 'false',
-            }).encode('utf-8')
-            req = urllib.request.Request(
-                f'https://formsubmit.co/ajax/{FEEDBACK_EMAIL}',
-                data=payload,
-                headers={
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (compatible; AI-Video-Detector/1.0)'
-                },
-                method='POST'
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                resp.read()
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+
+            gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+            if not gmail_password:
+                raise RuntimeError("GMAIL_APP_PASSWORD secret not set")
+
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f'New Feedback ({rating}★) from {name} — AI Video Detector'
+            msg['From'] = FEEDBACK_EMAIL
+            msg['To'] = FEEDBACK_EMAIL
+
+            html_body = f"""
+            <html><body style="font-family:sans-serif;color:#222;">
+            <h2 style="color:#4f46e5;">New Feedback Received</h2>
+            <table style="border-collapse:collapse;width:100%;">
+              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Name</td><td style="padding:8px;border:1px solid #ddd;">{name}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Email</td><td style="padding:8px;border:1px solid #ddd;">{email}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Rating</td><td style="padding:8px;border:1px solid #ddd;">{'★' * int(rating) if rating.isdigit() else rating}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Message</td><td style="padding:8px;border:1px solid #ddd;">{message}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Time</td><td style="padding:8px;border:1px solid #ddd;">{timestamp}</td></tr>
+            </table>
+            </body></html>
+            """
+            text_body = f"Name: {name}\nEmail: {email}\nRating: {rating}\nMessage: {message}\nTime: {timestamp}"
+
+            msg.attach(MIMEText(text_body, 'plain'))
+            msg.attach(MIMEText(html_body, 'html'))
+
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(FEEDBACK_EMAIL, gmail_password)
+                server.sendmail(FEEDBACK_EMAIL, FEEDBACK_EMAIL, msg.as_string())
+
+            print(f"[INFO] Feedback email sent successfully from {name}")
         except Exception as mail_err:
-            print(f"[WARN] Email forwarding failed: {mail_err}")
-            # Feedback is still saved locally, so report success to user
+            print(f"[WARN] Email sending failed: {mail_err}")
+            # Feedback is still saved locally — report success so user knows we got it
             return jsonify({'status': 'success', 'message': 'Feedback received'}), 200
 
         return jsonify({'status': 'success', 'message': 'Feedback sent'}), 200
