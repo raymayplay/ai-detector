@@ -403,9 +403,12 @@ def submit_feedback():
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
 
-            gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '')
+            # Strip all whitespace (Google shows app passwords with spaces)
+            gmail_password = os.environ.get('GMAIL_APP_PASSWORD', '').replace(' ', '').strip()
             if not gmail_password:
                 raise RuntimeError("GMAIL_APP_PASSWORD secret not set")
+
+            print(f"[DEBUG] Password length after stripping: {len(gmail_password)}")
 
             msg = MIMEMultipart('alternative')
             msg['Subject'] = f'New Feedback ({rating}★) from {name} — AI Video Detector'
@@ -429,9 +432,21 @@ def submit_feedback():
             msg.attach(MIMEText(text_body, 'plain'))
             msg.attach(MIMEText(html_body, 'html'))
 
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                server.login(FEEDBACK_EMAIL, gmail_password)
-                server.sendmail(FEEDBACK_EMAIL, FEEDBACK_EMAIL, msg.as_string())
+            # Try port 587 (STARTTLS) first, fall back to 465 (SSL)
+            try:
+                with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(FEEDBACK_EMAIL, gmail_password)
+                    server.sendmail(FEEDBACK_EMAIL, FEEDBACK_EMAIL, msg.as_string())
+                    print("[INFO] Email sent via port 587")
+            except Exception as e587:
+                print(f"[DEBUG] Port 587 failed ({e587}), trying 465...")
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                    server.login(FEEDBACK_EMAIL, gmail_password)
+                    server.sendmail(FEEDBACK_EMAIL, FEEDBACK_EMAIL, msg.as_string())
+                    print("[INFO] Email sent via port 465")
 
             print(f"[INFO] Feedback email sent successfully from {name}")
         except Exception as mail_err:
