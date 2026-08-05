@@ -137,6 +137,12 @@ def _run_frame_analysis_for_url(url, score, factors, authenticity_factors):
             'socket_timeout': 30,
             'noplaylist': True,
             'merge_output_format': 'mp4',
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'tv_embedded', 'mweb'],
+                    'player_skip': ['webpage'],
+                }
+            },
         }
         with yt_dlp.YoutubeDL(download_opts) as dl:
             try:
@@ -189,6 +195,12 @@ def analyze_url():
             'geo_bypass': True,
             'geo_bypass_country': 'US',
             'skip_download': True,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'tv_embedded', 'mweb'],
+                    'player_skip': ['webpage'],
+                }
+            },
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
