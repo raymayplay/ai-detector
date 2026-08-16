@@ -99,6 +99,8 @@ def analyze_video():
                 'confidence': result.get('confidence', 'Low'),
                 'factors': result['detection_factors'],
                 'authenticity_factors': result.get('authenticity_factors', []),
+                'frame_details': result.get('frame_details', {}),
+                'analysis_method': 'metadata + frame-level heuristics',
             }
         }
         print(f"[DEBUG] Sending response: {response_data}")
@@ -374,6 +376,7 @@ def analyze_url():
                     'confidence': confidence,
                     'factors': factors,
                     'authenticity_factors': authenticity_factors,
+                    'analysis_method': 'YouTube metadata + downloaded frame-level heuristics',
                 }
             })
             
@@ -383,6 +386,41 @@ def analyze_url():
             'status': 'error',
             'message': f"Could not analyze URL: {str(e)}"
         }), 500
+
+
+@app.route('/api/benchmark', methods=['GET'])
+def benchmark_report():
+    """Return an auditable benchmark report when a labeled manifest is present."""
+    manifest_path = os.path.join(os.path.dirname(__file__), 'benchmark_manifest.jsonl')
+    if not os.path.isfile(manifest_path):
+        return jsonify({
+            'status': 'not_measured',
+            'message': (
+                'No labeled benchmark dataset is configured. Add benchmark_manifest.jsonl '
+                'with independent AI/authentic labels before reporting accuracy.'
+            ),
+            'required_fields': ['path', 'label', 'source', 'notes'],
+        }), 200
+
+    try:
+        from benchmark import run_benchmark
+        report = run_benchmark(manifest_path)
+        return jsonify({'status': 'measured', 'report': report}), 200
+    except Exception as e:
+        print(f"[ERROR] Benchmark Exception: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Could not run the benchmark. Check the manifest and video paths.',
+        }), 500
+
+
+@app.route('/api/create-checkout', methods=['POST'])
+def create_checkout():
+    """Checkout placeholder until a payment provider is connected."""
+    return jsonify({
+        'status': 'not_configured',
+        'message': 'Checkout is not connected yet. Select a payment provider to enable it.',
+    }), 501
 
 
 @app.route('/api/feedback', methods=['POST'])

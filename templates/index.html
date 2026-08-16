@@ -238,6 +238,190 @@
             opacity: 0.8;
         }
 
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .result-stat {
+            padding: 0.8rem;
+            border-radius: 0.65rem;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(129, 140, 248, 0.16);
+        }
+
+        .result-stat-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .result-stat-value {
+            display: block;
+            margin-top: 0.2rem;
+            color: var(--text-main);
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .raw-output {
+            margin-top: 1rem;
+            text-align: left;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .raw-output pre {
+            max-height: 280px;
+            overflow: auto;
+            padding: 1rem;
+            border-radius: 0.6rem;
+            background: rgba(0, 0, 0, 0.3);
+            color: #c4b5fd;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .info-section {
+            margin-top: 2rem;
+        }
+
+        .info-card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card h2, .pricing-section h2 {
+            margin: 0 0 0.45rem;
+            font-size: 1.45rem;
+        }
+
+        .info-card p, .info-card li, .pricing-section > p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+        }
+
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-top: 1.25rem;
+        }
+
+        .trust-item {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.18);
+            border-radius: 0.7rem;
+        }
+
+        .trust-item strong {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: var(--text-main);
+        }
+
+        .trust-item span {
+            color: var(--text-muted);
+            font-size: 0.84rem;
+        }
+
+        .pricing-section {
+            margin-top: 2rem;
+            padding: 2rem 0 0;
+            text-align: center;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.25rem;
+            text-align: left;
+        }
+
+        .price-card {
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.9rem;
+            background: rgba(30, 41, 59, 0.88);
+        }
+
+        .price-card.featured {
+            border-color: rgba(129, 140, 248, 0.8);
+            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.15);
+        }
+
+        .price-card h3 {
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .price {
+            margin: 0.65rem 0;
+            color: var(--text-main);
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .price-card ul {
+            min-height: 92px;
+            margin: 0 0 1rem;
+            padding-left: 1.1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .plan-btn {
+            width: 100%;
+            margin-top: 0;
+        }
+
+        .benchmark-card {
+            margin-top: 2rem;
+        }
+
+        .benchmark-status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.7rem;
+            background: rgba(0, 0, 0, 0.18);
+            color: var(--text-muted);
+            text-align: left;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.65rem;
+            margin-top: 1rem;
+        }
+
+        .metric {
+            padding: 0.75rem;
+            border-radius: 0.6rem;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .metric strong {
+            display: block;
+            color: var(--text-main);
+            font-size: 1.15rem;
+        }
+
+        .metric span {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+        }
+
         /* Feedback Section */
         .feedback-card {
             background-color: var(--card-bg);
@@ -343,6 +527,9 @@
             .form-row {
                 flex-direction: column;
             }
+            .result-summary, .trust-grid, .pricing-grid, .metric-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Loading Spinner */
@@ -441,6 +628,78 @@
                 <button type="submit" class="btn fb-submit-btn" id="fb-submit-btn">Send Feedback</button>
                 <div id="fb-status"></div>
             </form>
+        </section>
+
+        <section class="info-section info-card" id="trust-section">
+            <h2>Who made this, and why trust it?</h2>
+            <p>
+                AI Video Detector was created by Moksh Oswal to make synthetic-media checks
+                easier to inspect. It is a transparent screening tool, not a court-grade
+                authenticity certificate.
+            </p>
+            <div class="trust-grid">
+                <div class="trust-item">
+                    <strong>Visible evidence</strong>
+                    <span>Every result shows the score, confidence, signals, and—when available—frame measurements.</span>
+                </div>
+                <div class="trust-item">
+                    <strong>No fake accuracy claim</strong>
+                    <span>Accuracy is shown only from an independently labeled benchmark, with the sample count and confusion matrix.</span>
+                </div>
+                <div class="trust-item">
+                    <strong>Known limits</strong>
+                    <span>Compression, missing metadata, editing, and new generators can fool heuristic detectors. Important claims need human review.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="pricing-section" id="pricing">
+            <h2>Simple pricing</h2>
+            <p>Free screening is available now. Paid limits will only activate after checkout is connected.</p>
+            <div class="pricing-grid">
+                <article class="price-card">
+                    <h3>Free</h3>
+                    <div class="price">$0</div>
+                    <ul>
+                        <li>Basic upload and YouTube checks</li>
+                        <li>Evidence and confidence details</li>
+                        <li>No payment required</li>
+                    </ul>
+                    <button class="btn plan-btn" data-plan="free">Use free</button>
+                </article>
+                <article class="price-card featured">
+                    <h3>Creator</h3>
+                    <div class="price">$9 <small>/ month</small></div>
+                    <ul>
+                        <li>Higher monthly analysis limits</li>
+                        <li>Downloadable result reports</li>
+                        <li>Priority processing</li>
+                    </ul>
+                    <button class="btn plan-btn" data-plan="creator">Upgrade</button>
+                </article>
+                <article class="price-card">
+                    <h3>Studio</h3>
+                    <div class="price">$29 <small>/ month</small></div>
+                    <ul>
+                        <li>Team usage and larger limits</li>
+                        <li>Benchmark exports</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <button class="btn plan-btn" data-plan="studio">Upgrade</button>
+                </article>
+            </div>
+            <div id="billing-status" class="benchmark-status" style="text-align:center;">
+                Checkout is being connected. Free analysis remains available.
+            </div>
+        </section>
+
+        <section class="info-section info-card benchmark-card" id="benchmark-section">
+            <h2>Measured accuracy</h2>
+            <p>
+                These metrics come from labeled test files, not from the detector's own guesses.
+                The set should include real recordings, edited/compressed media, and multiple AI generators.
+            </p>
+            <div id="benchmark-status" class="benchmark-status">Loading benchmark status…</div>
         </section>
     </div>
 
@@ -588,6 +847,7 @@
             const confidence = data.confidence || 'Medium';
             const factors = data.factors || [];
             const authFactors = data.authenticity_factors || [];
+            const frameDetails = data.frame_details || {};
 
             const headline = isAi
                 ? `AI Generated Content (${confidence} confidence)`
@@ -605,9 +865,22 @@
             }
 
             let html = '';
+            const scorePercent = Math.round((Number(data.score || 0) * 100));
+            html += `<div class="result-summary">
+                <div class="result-stat"><span class="result-stat-label">AI score</span><span class="result-stat-value">${scorePercent}%</span></div>
+                <div class="result-stat"><span class="result-stat-label">Confidence</span><span class="result-stat-value">${escapeHtml(confidence)}</span></div>
+                <div class="result-stat"><span class="result-stat-label">Analyzed file</span><span class="result-stat-value">${escapeHtml(data.filename || 'Unknown')}</span></div>
+            </div>`;
             if (factors.length > 0) {
                 html += '<div class="factor-block"><div class="factor-title">What we found</div><ul>';
                 factors.forEach(f => { html += `<li>${escapeHtml(f)}</li>`; });
+                html += '</ul></div>';
+            }
+            if (Object.keys(frameDetails).length > 0) {
+                html += '<div class="factor-block"><div class="factor-title">Frame measurements</div><ul>';
+                Object.entries(frameDetails).forEach(([key, value]) => {
+                    html += `<li>${escapeHtml(key.replaceAll('_', ' '))}: ${escapeHtml(value)}</li>`;
+                });
                 html += '</ul></div>';
             }
             if (authFactors.length > 0) {
@@ -615,7 +888,8 @@
                 authFactors.forEach(f => { html += `<li>${escapeHtml(f)}</li>`; });
                 html += '</ul></div>';
             }
-            html += '<p class="disclaimer">Heuristic analysis based on video metadata. Always cross-check sources for important media.</p>';
+            html += `<p class="disclaimer">${escapeHtml(data.analysis_method || 'Heuristic analysis')} — not proof of origin. Always cross-check sources for important media.</p>`;
+            html += `<details class="raw-output"><summary>Show raw result</summary><pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre></details>`;
             detailsEl.innerHTML = html;
         }
 
@@ -624,6 +898,64 @@
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[c]));
         }
+
+        // Pricing / checkout
+        document.querySelectorAll('.plan-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const plan = button.dataset.plan;
+                const billingStatus = document.getElementById('billing-status');
+                if (plan === 'free') {
+                    billingStatus.innerHTML = '<span style="color:var(--success)">✓ Free analysis is ready to use above.</span>';
+                    document.querySelector('.main-card').scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                button.disabled = true;
+                button.innerText = 'Opening checkout…';
+                try {
+                    const response = await fetch('/api/create-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ plan })
+                    });
+                    const result = await response.json();
+                    billingStatus.innerHTML = `<span style="color:var(--text-muted)">${escapeHtml(result.message || 'Checkout is not available yet.')}</span>`;
+                } catch (err) {
+                    billingStatus.innerHTML = '<span style="color:var(--danger)">Could not start checkout. Please try again.</span>';
+                } finally {
+                    button.disabled = false;
+                    button.innerText = 'Upgrade';
+                }
+            });
+        });
+
+        // Benchmark status
+        async function loadBenchmarkStatus() {
+            const target = document.getElementById('benchmark-status');
+            try {
+                const response = await fetch('/api/benchmark');
+                const result = await response.json();
+                if (result.status === 'measured') {
+                    const report = result.report;
+                    const metrics = report.metrics || {};
+                    const formatMetric = value => value === null || value === undefined ? 'n/a' : `${Math.round(value * 100)}%`;
+                    target.innerHTML = `<strong>${report.sample_count} labeled samples</strong>
+                        <div class="metric-grid">
+                            <div class="metric"><strong>${formatMetric(metrics.accuracy)}</strong><span>Accuracy</span></div>
+                            <div class="metric"><strong>${formatMetric(metrics.precision)}</strong><span>Precision</span></div>
+                            <div class="metric"><strong>${formatMetric(metrics.recall_sensitivity)}</strong><span>Recall / sensitivity</span></div>
+                            <div class="metric"><strong>${formatMetric(metrics.specificity)}</strong><span>Specificity</span></div>
+                            <div class="metric"><strong>${formatMetric(metrics.f1)}</strong><span>F1</span></div>
+                            <div class="metric"><strong>${formatMetric(metrics.balanced_accuracy)}</strong><span>Balanced accuracy</span></div>
+                        </div>
+                        <p class="disclaimer">${escapeHtml(report.warning || '')}</p>`;
+                } else {
+                    target.innerHTML = `<strong>Not measured yet</strong><br>${escapeHtml(result.message || 'Add an independently labeled dataset first.')}`;
+                }
+            } catch (err) {
+                target.innerText = 'Benchmark status is unavailable right now.';
+            }
+        }
+        loadBenchmarkStatus();
 
         // Feedback Form
         const feedbackForm = document.getElementById('feedback-form');
