@@ -4,3 +4,5 @@ yt-dlp
 Pillow
 numpy
 resend
+gunicorn
+gunicorn

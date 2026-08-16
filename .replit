@@ -13,7 +13,7 @@ externalPort = 80
 language = "python3"
 
 [deployment]
-run = ["python", "app.py"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "app:app"]
 deploymentTarget = "autoscale"
 
 [agent]
